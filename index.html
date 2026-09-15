@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PrediSafe AI</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#edf5fc;
+color:#17365d
+}
+
+header{
+background:#f9fcff;
+border-bottom:1px solid #d7e7f5;
+padding:18px 5%;
+display:flex;
+justify-content:space-between;
+align-items:center
+}
+
+.logo{
+font-size:25px;
+font-weight:700;
+color:#17365d
+}
+
+.tagline{
+color:#6f849b;
+font-size:13px;
+margin-top:4px
+}
+
+.status{
+color:#18a66a;
+font-size:14px;
+font-weight:600
+}
+
+.container{
+width:90%;
+max-width:1400px;
+margin:25px auto
+}
+
+.tabs{
+display:flex;
+gap:10px;
+margin-bottom:20px
+}
+
+.tab{
+padding:12px 23px;
+border:1px solid #cbddec;
+background:#f8fbff;
+color:#294665;
+border-radius:12px;
+cursor:pointer;
+font-weight:600
+}
+
+.tab.active{
+background:#2563eb;
+color:white;
+border-color:#2563eb;
+box-shadow:0 5px 15px rgba(37,99,235,.18)
+}
+
+.cards{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:16px
+}
+
+.card{
+background:linear-gradient(145deg,#ffffff,#f2f8ff);
+border:1px solid #d5e5f3;
+border-radius:16px;
+padding:20px;
+box-shadow:0 7px 22px rgba(52,93,130,.08)
+}
+
+.label{
+font-size:13px;
+color:#71869e
+}
+
+.value{
+font-size:28px;
+font-weight:700;
+margin-top:8px;
+color:#17365d
+}
+
+.green{color:#16a36a}
+.orange{color:#ed9b00}
+.red{color:#e5394f}
+.blue{color:#2563eb}
+
+.section{
+background:linear-gradient(145deg,#ffffff,#f4f9ff);
+border:1px solid #d5e5f3;
+border-radius:16px;
+padding:20px;
+margin-top:20px;
+box-shadow:0 7px 22px rgba(52,93,130,.07)
+}
+
+.section-title{
+font-size:18px;
+font-weight:700;
+margin-bottom:16px;
+color:#193b62
+}
+
+.weather{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:12px
+}
+
+.weather div{
+background:#edf6ff;
+border:1px solid #d4e7f8;
+border-radius:12px;
+padding:16px;
+color:#294665
+}
+
+.buttons{
+display:flex;
+gap:10px;
+flex-wrap:wrap
+}
+
+.btn{
+border:1px solid #c8dced;
+background:#e8f3ff;
+color:#1f4f7d;
+padding:10px 16px;
+border-radius:10px;
+cursor:pointer;
+font-weight:600
+}
+
+.btn:hover{
+background:#2563eb;
+color:white;
+border-color:#2563eb
+}
+
+.map{
+height:350px;
+border-radius:14px;
+overflow:hidden;
+border:1px solid #cddfed
+}
+
+.grid2{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px
+}
+
+.item{
+background:#f0f7fd;
+border:1px solid #d5e5f2;
+border-radius:12px;
+padding:15px;
+margin-bottom:10px
+}
+
+.item h3{
+margin:0 0 7px;
+font-size:15px;
+color:#21466d
+}
+
+.item p{
+margin:5px 0;
+color:#71869f;
+font-size:13px
+}
+
+#emergencyMode{
+display:none;
+background:#fff1f3;
+border:1px solid #ffcbd1;
+color:#a52536
+}
+
+.sos{
+background:#e5394f;
+color:white;
+border-color:#e5394f;
+font-size:16px;
+font-weight:700;
+padding:12px 22px
+}
+
+.safety{
+background:#f3f8fd;
+border:1px solid #cddfed;
+border-radius:12px;
+padding:15px;
+margin-top:12px
+}
+
+canvas{
+max-height:250px
+}
+
+footer{
+text-align:center;
+padding:25px;
+color:#71869f;
+font-size:13px
+}
+
+@media(max-width:900px){
+.cards,.weather{
+grid-template-columns:1fr 1fr
+}
+
+.grid2{
+grid-template-columns:1fr
+}
+}
+
+@media(max-width:600px){
+.cards,.weather{
+grid-template-columns:1fr
+}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+
+<div>
+<div class="logo">🛡️ PrediSafe AI</div>
+
+<div class="tagline">
+Predict before it happens. Protect when it matters.
+</div>
+</div>
+
+<div class="status">
+● System Online
+</div>
+
+</header>
+
+<div class="container">
+
+<div class="tabs">
+
+<button class="tab active" onclick="setDisaster('FLOOD',this)">
+🌊 Flood
+</button>
+
+<button class="tab" onclick="setDisaster('LANDSLIDE',this)">
+⛰ Landslide
+</button>
+
+</div>
+
+<div class="cards">
+
+<div class="card">
+<div class="label">Current Risk</div>
+<div id="risk" class="value">--</div>
+</div>
+
+<div class="card">
+<div class="label">Risk Trend</div>
+<div id="trend" class="value">--</div>
+</div>
+
+<div class="card">
+<div class="label">Response Stage</div>
+<div id="stage" class="value">--</div>
+</div>
+
+<div class="card">
+<div class="label">AI Confidence</div>
+<div id="confidence" class="value">--</div>
+</div>
+
+</div>
+
+<div class="section">
+
+<div class="section-title">
+Live Environmental Data
+</div>
+
+<div class="weather">
+
+<div>
+🌡 Temperature<br>
+<b id="temp">--</b>
+</div>
+
+<div>
+💧 Humidity<br>
+<b id="humidity">--</b>
+</div>
+
+<div>
+🌧 Rain<br>
+<b id="rain">--</b>
+</div>
+
+<div>
+💨 Wind<br>
+<b id="wind">--</b>
+</div>
+
+</div>
+
+<div class="buttons" style="margin-top:15px">
+
+<button class="btn" onclick="loadLive()">
+🔄 Refresh
+</button>
+
+<button class="btn" onclick="locate()">
+📍 Detect Location
+</button>
+
+</div>
+
+<div id="locationStatus" style="margin-top:10px;color:#71869f"></div>
+
+</div>
+
+<div class="section">
+
+<div class="section-title">
+Risk Simulation
+</div>
+
+<div class="buttons">
+
+<button class="btn" onclick="simulate('normal')">
+🟢 Normal
+</button>
+
+<button class="btn" onclick="simulate('moderate')">
+🟠 Moderate
+</button>
+
+<button class="btn" onclick="simulate('critical')">
+🔴 Critical
+</button>
+
+</div>
+
+</div>
+
+<div id="emergencyMode" class="section">
+
+<div class="section-title">
+🚨 Emergency Mode Activated
+</div>
+
+<p>
+Critical disaster risk detected. Follow safety guidance immediately.
+</p>
+
+<div class="buttons">
+
+<button class="btn sos" onclick="sendSOS()">
+🆘 SOS
+</button>
+
+<button class="btn" onclick="showSafety()">
+🛡 Safety Guide
+</button>
+
+</div>
+
+<div id="safetyGuide" class="safety" style="display:none">
+
+<b>Immediate Safety Actions</b>
+
+<p>• Move away from rivers, low-lying areas and unstable slopes.</p>
+<p>• Follow official evacuation instructions.</p>
+<p>• Keep your phone charged and stay connected.</p>
+<p>• Contact emergency services if immediate help is required.</p>
+
+</div>
+
+</div>
+
+<div class="grid2">
+
+<div class="section">
+
+<div class="section-title">
+🤖 Explainable AI
+</div>
+
+<div id="reasons">
+Run a prediction to see risk factors.
+</div>
+
+</div>
+
+<div class="section">
+
+<div class="section-title">
+📈 Risk Trend
+</div>
+
+<canvas id="chart"></canvas>
+
+</div>
+
+</div>
+
+<div class="section">
+
+<div class="section-title">
+📍 Location & Nearby Facilities
+</div>
+
+<div id="map" class="map"></div>
+
+</div>
+
+<div class="grid2">
+
+<div class="section">
+
+<div class="section-title">
+🏥 Nearby Safe Places
+</div>
+
+<div id="safeCount" class="label">
+Detecting location...
+</div>
+
+<div id="safePlaces" style="margin-top:12px"></div>
+
+</div>
+
+<div class="section">
+
+<div class="section-title">
+🚑 Emergency Services
+</div>
+
+<div id="serviceCount" class="label">
+Loading services...
+</div>
+
+<div id="services" style="margin-top:12px"></div>
+
+</div>
+
+</div>
+
+</div>
+
+<footer>
+PrediSafe AI • AI-powered disaster risk prediction and early warning
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+let disaster="FLOOD";
+let map;
+let marker;
+let chart;
+let currentLocation=null;
+
+const $=id=>document.getElementById(id);
+
+function setDisaster(type,button){
+
+disaster=type;
+
+document.querySelectorAll(".tab")
+.forEach(x=>x.classList.remove("active"));
+
+button.classList.add("active");
+
+simulate("normal");
+}
+
+async function simulate(scenario){
+
+try{
+
+const data=await fetch("/api/simulate",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+disaster:disaster,
+scenario:scenario
+})
+}).then(r=>r.json());
+
+showResult(data);
+
+}catch(e){}
+
+}
+
+async function loadLive(){
+
+try{
+
+let weatherUrl="/api/live-weather";
+
+if(currentLocation){
+weatherUrl+=
+"?lat="+currentLocation.lat+
+"&lng="+currentLocation.lng;
+}
+
+const weather=
+await fetch(weatherUrl).then(r=>r.json());
+
+$("temp").innerText=
+(weather.temperature??"--")+" °C";
+
+$("humidity").innerText=
+(weather.humidity??"--")+" %";
+
+$("rain").innerText=
+(weather.rain??"--")+" mm";
+
+$("wind").innerText=
+(weather.wind_speed??"--")+" km/h";
+
+const result=
+await fetch("/api/live-predict",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+disaster:disaster,
+lat:currentLocation?.lat,
+lng:currentLocation?.lng
+})
+}).then(r=>r.json());
+
+showResult(result);
+
+}catch(e){
+
+$("locationStatus").innerText=
+"Unable to load live data";
+
+}
+
+}
+
+function showResult(data){
+
+if(!data.success)return;
+
+const p=data.prediction||{};
+const a=data.analysis||{};
+const alert=data.alert||{};
+
+const score=Number(p.risk_score)||0;
+
+let confidence=Number(p.confidence);
+
+if(!Number.isFinite(confidence)){
+confidence=85;
+}
+
+if(confidence<=1){
+confidence*=100;
+}
+
+$("risk").innerText=
+Math.round(score)+"/100";
+
+$("confidence").innerText=
+Math.round(confidence)+"%";
+
+$("trend").innerText=
+a.trend||"STABLE";
+
+$("stage").innerText=
+alert.stage||"MONITOR";
+
+$("risk").className=
+"value "+riskClass(score);
+
+$("stage").className=
+"value "+riskClass(score);
+
+$("reasons").innerHTML=
+(p.reasons||[])
+.map(x=>"<p>• "+x+"</p>")
+.join("");
+
+$("emergencyMode").style.display=
+score>=75?"block":"none";
+
+drawChart(data.history||[]);
+
+}
+
+function riskClass(score){
+
+if(score>=75)return"red";
+
+if(score>=50)return"orange";
+
+return"green";
+}
+
+function drawChart(values){
+
+if(chart)chart.destroy();
+
+chart=new Chart($("chart"),{
+
+type:"line",
+
+data:{
+labels:values.map((_,i)=>i+1),
+
+datasets:[{
+label:"Risk Score",
+data:values,
+tension:.35,
+fill:false,
+borderWidth:2,
+pointRadius:3
+}]
+},
+
+options:{
+responsive:true,
+
+plugins:{
+legend:{
+display:false
+}
+},
+
+scales:{
+y:{
+min:0,
+max:100
+}
+}
+
+}
+
+});
+
+}
+
+function initMap(){
+
+map=L.map("map")
+.setView([27.7172,85.3240],12);
+
+L.tileLayer(
+"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+{
+maxZoom:19,
+attribution:"© OpenStreetMap"
+}
+).addTo(map);
+
+}
+
+function locate(){
+
+if(!navigator.geolocation){
+
+$("locationStatus").innerText=
+"Location not supported";
+
+return;
+}
+
+$("locationStatus").innerText=
+"Detecting your location...";
+
+navigator.geolocation.getCurrentPosition(
+
+async p=>{
+
+const lat=p.coords.latitude;
+const lng=p.coords.longitude;
+
+currentLocation={
+lat:lat,
+lng:lng
+};
+
+if(marker){
+map.removeLayer(marker);
+}
+
+marker=L.marker([lat,lng])
+.addTo(map)
+.bindPopup("📍 You are here")
+.openPopup();
+
+map.setView([lat,lng],13);
+
+$("locationStatus").innerText=
+"📍 Current location detected";
+
+await loadNearby(lat,lng);
+await loadLive();
+
+},
+
+()=>{
+
+$("locationStatus").innerText=
+"⚠️ Allow location permission";
+
+}
+
+);
+
+}
+
+async function loadNearby(lat,lng){
+
+try{
+
+const response=
+await fetch(
+"/api/nearby?lat="+lat+"&lng="+lng
+);
+
+const d=await response.json();
+
+const safe=(d.safe_places||[]).slice(0,4);
+const services=d.emergency_services||[];
+
+$("safeCount").innerText=
+safe.length+" nearby locations found";
+
+$("serviceCount").innerText=
+services.length+
+" emergency services available";
+
+$("safePlaces").innerHTML=
+
+safe.length?
+
+safe.map(x=>`
+
+<div class="item">
+
+<h3>📍 ${x.name}</h3>
+
+<p>${x.type}</p>
+
+<p class="green">
+${x.distance} km away
+</p>
+
+<button class="btn"
+onclick="direction(${x.lat},${x.lng})">
+🧭 Directions
+</button>
+
+</div>
+
+`).join("")
+
+:
+
+"<div class='item'>No nearby locations found.</div>";
+
+$("services").innerHTML=
+
+services.map(x=>`
+
+<div class="item">
+
+<h3>🚑 ${x.name}</h3>
+
+<p>${x.type}</p>
+
+<p class="green">${x.number}</p>
+
+<button class="btn"
+onclick="call('${x.number}')">
+📞 Call
+</button>
+
+</div>
+
+`).join("");
+
+}catch(e){
+
+$("safeCount").innerText=
+"Unable to load nearby locations";
+
+}
+
+}
+
+function direction(lat,lng){
+
+window.open(
+"https://www.google.com/maps/dir/?api=1&destination="
++lat+","+lng,
+"_blank"
+);
+
+}
+
+function call(number){
+
+window.location.href="tel:"+number;
+
+}
+
+function sendSOS(){
+
+if(currentLocation){
+
+window.open(
+"https://www.google.com/maps/search/?api=1&query="
++currentLocation.lat+","+currentLocation.lng,
+"_blank"
+);
+
+}else{
+
+alert(
+"Please enable location first to use SOS."
+);
+
+}
+
+}
+
+function showSafety(){
+
+const box=$("safetyGuide");
+
+box.style.display=
+box.style.display==="none"
+?"block"
+:"none";
+
+}
+
+window.onload=()=>{
+
+initMap();
+loadLive();
+
+};
+
+</script>
+
+</body>
+</html>
